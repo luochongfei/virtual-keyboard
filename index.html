@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>虚拟键盘移动版</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <style>
+        body{
+            max-width: 540px;
+            margin: 0 10px;
+        }
+        .l-input{
+            display: block;
+            padding: 3px 8px;
+            height: 35px;
+            line-height: 35px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .l-input.active{
+            box-shadow:  inset 0 2px 4px rgba(0, 0, 0, .2);
+            border-color: #f60;
+        }
+        
+
+        /* 核心 CSS */
+        .key-container{
+            position: fixed;
+            z-index: 2;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0 20px 0;
+            margin: auto;
+            max-width: 540px;
+            height: 300px;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, .2);
+            transition: transform .3s ease;
+            background: #f1f1f1;
+        }
+        .key-container.hide{
+            transform: translate(0, 304px);
+        }
+        .key-panel-close{
+            padding: 10px 0;
+            text-align: center;
+        }
+        .key-panel-close:active{
+            background-color: #fafafa;
+        }
+        .key-panel{
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin: 0;
+            padding: 0;
+        }
+        .key-panel li{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-basis: 29%;
+            margin-bottom: 10px;
+            height: 53px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            color: #000;
+            font-size: 28px;
+            user-select: none;
+        }
+        .key-panel li:active{
+            background: #e0e0e0;
+        }
+
+
+    </style>
+</head>
+<body>
+    <h1>虚拟数字键盘移动版</h1>
+    <div id="app">
+        <div :class="['l-input']" @click="inputClick"></div>
+
+        <br>
+        <br>
+
+        <input type="text" :class="['l-input']" @click="inputClick">
+        <br>
+        <br>
+
+        <div :class="['l-input']" @click="inputClick"></div>
+        
+        <br>
+        <br>
+        <textarea :class="['l-input']" @click="inputClick"></textarea>
+
+        <br>
+        <br>
+
+        <div>点击页面其他地方可以关闭键盘面板</div>
+
+
+        <!-- 核心 HTML -->
+        <div :class="['key-container', {'hide': isHide}]" ref="panel">
+            <div class="key-panel-close" @click="blur">收起</div>
+            <ul class="key-panel">
+                <li v-for="txt in keys" v-text="txt" @click="click(txt)"></li>
+            </ul>
+        </div>
+
+
+    </div>
+
+
+    <script>
+        // 核心 JS
+        new Vue({
+            el: '#app',
+            data: {
+                currentTarget: null,
+                keys: [1,2,3,4,5,6,7,8,9,'.',0,'删除'],
+                isHide: true,
+            },
+            methods: {
+
+                // 点击输入框时
+                inputClick($event) {
+                    // 处理多个输入框 激活并存的问题
+                    if (this.currentTarget) {
+                        this.currentTarget.classList.remove('active');
+                    }
+                    document.removeEventListener('click', this.closeE);
+
+                    // 激活当前模拟输入框
+                    this.currentTarget = $event.target;
+                    this.currentTarget.classList.add('active');
+                    this.isHide = false;
+
+                    // 如果是 真实输入框类型，要禁止聚焦出现的系统键盘
+                    this.currentTarget.blur();
+
+                    // 点击页面其他地方需要隐藏键盘
+                    this.closeE = (event) => {
+                        if (!(event.target === $event.target || this.$refs.panel.contains(event.target))) {
+                            this.blur();
+                        }
+                    }
+                    document.addEventListener('click', this.closeE);
+                },
+
+                // 模拟输入框被离焦时
+                blur() {
+                    if (this.closeE) {
+                        document.removeEventListener('click', this.closeE);
+                    }
+                    this.currentTarget.classList.remove('active');
+                    this.currentTarget = null;
+                    this.isHide = true;
+                },
+
+                // 点击键盘按键的操作
+                click(txt) {
+                    const oTarget = this.currentTarget;
+                    if (oTarget) {
+                        const isInput = /(INPUT|TEXTAREA)/.test(oTarget.tagName.toUpperCase());
+                        let currentVal = isInput ? oTarget.value : oTarget.innerText;
+                        let resultVal = null;
+
+                        switch (txt) {
+                            case '删除':
+                                resultVal = currentVal.substr(0, currentVal.length - 1);
+                                break;
+                            default:
+                                resultVal = currentVal += txt;
+                                break;
+                        }
+
+                        if (isInput) {
+                            oTarget.value = resultVal;
+                        } else {
+                            oTarget.innerText = resultVal;
+                        }
+                    }
+                },
+
+            }
+        });
+    </script>
+</body>
+</html>
